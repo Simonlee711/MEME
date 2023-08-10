@@ -1,4 +1,5 @@
 # %%
+# import numpy as np
 # example ICD loading
 def stringify_icd(code_type, code_value, code_text):
     return f"ICD-{str(code_type)} code: [{str(code_value).strip().replace('.', '').lower()}], {str(code_text).strip().lower()}."
@@ -12,17 +13,19 @@ def stringify_visit_codes(codes):
     return " ".join(return_list)
 # example lab loading
 
-def stringify_lab(lab_name, lab_value, datetime, valueuom=None, flag=None):
+def stringify_lab(lab_name, lab_value, datetime=None, valueuom=None, flag=None):
     return_list = []
     if flag == 'abnormal':
         return_list.append('abnormal')
     
+
     return_list.append(f"{str(lab_name).strip().lower()} of {str(lab_value).strip().lower()}")
     
-    if valueuom is not None:
+    if valueuom is not None and str(valueuom) != 'nan':
         return_list.append(str(valueuom).strip().lower())
-        
-    return_list.append(f"on {str(datetime).strip().lower()}")
+
+    if datetime is not None and str(datetime) != 'nan': 
+        return_list.append(f"on {str(datetime).strip().lower()}")
         
     return " ".join(return_list) + "."
 
@@ -80,7 +83,7 @@ def stringify_visit_meta(subject_id, hadm_id, admittime,
     # if we want to include discharge information leave these in
     if dischtime is not None:
         return_list.append(f"The patient was discharged on {str(dischtime).strip().lower()}.")
-    if deathtime is not None:
+    if deathtime is not None and str(deathtime) != 'nan':
         return_list.append(f"The patient is deceased as of {str(deathtime).strip().lower()}.")
     return " ".join(return_list)
     
