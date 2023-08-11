@@ -6,6 +6,12 @@ from tqdm import tqdm
 
 from utils import stringify_visit_codes, stringify_visit_labs, stringify_visit_meds, stringify_visit_meta
 
+""" This program reads in MIMIC-IV hospital files and converts them to text. More documentation to follow..."""
+# JC: I ran these on my local machine since i had a copy of the repo...
+# NOTE: Change this variable to the location of the mimic database
+path = '/mnt/bigdata/compmed/physionet/mimic-iv-clinical-database-demo-2.2/mimic-iv-clinical-database-demo-2.2/'
+# path = '/mnt/bigdata/compmed/physionet/mimic-iv-2.2/mimic-iv-2.2/'
+
 # %%
 def convert_admissions(path, output='admissions_text.json'):
     admissions = pd.read_csv(os.path.join(path, 'hosp/admissions.csv.gz'), compression='gzip')
@@ -121,9 +127,6 @@ def convert_meds(path, output = "meds_text.json"):
 
 # %%
 if __name__ == '__main__':
-    # JC: I ran these on my local machine since i had a copy of the repo...
-    path = '/mnt/bigdata/compmed/physionet/mimic-iv-clinical-database-demo-2.2/mimic-iv-clinical-database-demo-2.2/'
-    # path = '/mnt/bigdata/compmed/physionet/mimic-iv-2.2/mimic-iv-2.2/'
     print("Running codes")
     codes_p = convert_codes(path)
     print("Codes complete.")

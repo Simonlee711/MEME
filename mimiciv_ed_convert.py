@@ -4,7 +4,11 @@ import pandas as pd
 import os 
 from tqdm import tqdm
 import json 
+"""
+This program converts the MIMIC-IV-ED database to text for analysis using LLMs and transformers
+"""
 # %%
+# NOTE: Modify this to the root directory of MIMIC-IV-ED
 path = '/mnt/bigdata/compmed/physionet/mimic-iv-ed-2.2/mimic-iv-ed-2.2/'
 # %%
 def stringify_edstays(
