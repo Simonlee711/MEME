@@ -40,6 +40,8 @@ def stringify_edstays(
         response_dict['arrival'].append(f"The patient's language is {language.lower()}.")
     
     response_dict['eddischarge'].append(f"The ED disposition was {disposition.lower()} at {str(outtime)}.")
+    response_dict['eddischarge_category'] = str(disposition.lower())
+
     if dod is not None and str(dod) != 'nan':
         response_dict['eddischarge'].append(f'The patient died on {str(dod).lower()}.')
     # FOR NOW, ignore the hospitalization information
