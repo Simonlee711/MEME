@@ -41,6 +41,8 @@ It is very clear that the multimodality method outperforms single modality metho
 
 ## TODO
 
+- Test the generalibility by using different LLMs
+- test on hospital to hospital systems (MIMIC-UCLA)
 - rewrite the paper
 - take into account all the reviews
 - Demonstrate on more general tasks extending it capabilities to other domains in an appendix
