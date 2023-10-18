@@ -50,7 +50,7 @@ It is very clear that the multimodality method outperforms single modality metho
 - Add the number representation portion of the value since our model learns a lot of number stuff
 
 ## Authors
-- Simon Lee (simonlee711@g.ucla.edu)
+- **Simon Lee** (simonlee711@g.ucla.edu)
 - Arabdah Biswas (arabdhab@g.ucla.edu)
 - Akos Rudas (akosrudas@g.ucla.edu)
 - Jeffrey Chiang (njchiang@g.ucla.edu)

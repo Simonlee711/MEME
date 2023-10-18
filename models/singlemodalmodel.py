@@ -1,9 +1,4 @@
-import torch
-import torch.nn as nn
-from transformers import DataCollatorWithPadding,AutoModelForSequenceClassification, Trainer, TrainingArguments,AutoTokenizer,AutoModel,AutoConfig
-from transformers.modeling_outputs import TokenClassifierOutput
-
-class EDdispositionClassifier(nn.Module):
+class SingleModPredictor(nn.Module):
     """
     A task-specific custom transformer model for predicting ED Disposition. 
     This model loads a pre-trained transformer model and adds a new dropout 
@@ -15,7 +10,7 @@ class EDdispositionClassifier(nn.Module):
             checkpoint (str): The name of the pre-trained model or path to the model weights.
             num_labels (int): The number of output labels in the final classification layer.
         """
-        super(EDdispositionClassifier, self).__init__()
+        super(SingleModPredictor, self).__init__()
         self.num_labels = num_labels # number of labels for classifier
         
         # checkpoint is the model name 
@@ -46,7 +41,7 @@ class EDdispositionClassifier(nn.Module):
         
         last_hidden_state = outputs[0]
         
-        sequence_outputs = self.dropouts(last_hidden_state)
+        sequence_outputs = self.dropout(last_hidden_state)
         
         logits = self.classifier(sequence_outputs[:, 0, : ].view(-1, 768 ))
         
@@ -57,5 +52,3 @@ class EDdispositionClassifier(nn.Module):
             
             # TokenClassifierOutput
             return TokenClassifierOutput(loss=loss, logits=logits, hidden_states=outputs.hidden_states, attentions=outputs.attentions)
-        
-    
