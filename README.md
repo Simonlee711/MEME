@@ -46,6 +46,8 @@ It is very clear that the multimodality method outperforms single modality metho
 - rewrite the paper
 - take into account all the reviews
 - Demonstrate on more general tasks extending it capabilities to other domains in an appendix
+- Test the orthogonality of datasets
+- Add the number representation portion of the value since our model learns a lot of number stuff
 
 ## Authors
 - Simon Lee (simonlee711@g.ucla.edu)
