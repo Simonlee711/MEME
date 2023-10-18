@@ -24,24 +24,24 @@ To assess the performance of our method, we compared it to a single-modality mod
 
 ![plot](./img/results2.png)
 
-| Method | F1 Results |
-| --- | --- |
-| arrival-only Transformer | 0.566 (0.554, 0.579) |
-| codes-only Transformer | 0.418 (0.400, 0.434) |
-| medrecon-only Transformer | 0.567 (0.553, 0.580) |
-| pyxis-only Transformer | 0.564 (0.551, 0.577) |
-| triage-only Transformer | 0.566 (0.544, 0.579) |
-| vitals-only Transformer | 0.566 (0.544, 0.579) |
-| Multimodal Transformer | 0.894 (0.885, 0.903) |
-| MLP | n/a |
-| Random Forest Classifier | n/a |
+| Method | F1 Results | Precision Results | Accuracy Results|
+| --- | --- | --- | --- |
+| arrival-only Transformer | 0.566 (0.554, 0.579) | 0.395 (0.383, 0.407) | 0.395 (0.383, 0.407) | 
+| codes-only Transformer | 0.418 (0.400, 0.434) | 0.382 (0.365, 0.399) | 0.492 (0.479, 0.503) |
+| medrecon-only Transformer | 0.567 (0.553, 0.580) | 0.395 (0.383, 0.408) | 0.396 (0.383, 0.408) |
+| pyxis-only Transformer | 0.564 (0.551, 0.577) | 0.394 (0.382, 0.407) | 0.395 (0.384, 0.408) |
+| triage-only Transformer | 0.566 (0.544, 0.579) | 0.395 (0.383, 0.408) |  0.395 (0.383, 0.408) | 
+| vitals-only Transformer | 0.566 (0.544, 0.579) | 0.395 (0.383, 0.407) | 0.395 (0.383, 0.407) |
+| Multimodal Transformer | 0.894 (0.885, 0.903) | 0.811 (0.797, 0.824) | 0.907 (0.900, 0.914) |
+| MedBERT Transformer | 0.923 (0.915, 0.931) | 0.902 (0.891, 0.913) | 0.938 (0.932, 0.944) |
+| MLP | n/a | n/a | n/a |
+| Random Forest Classifier | n/a | n/a | n/a |
 
 
 It is very clear that the multimodality method outperforms single modality methods. Therefore there is a lot of merit in using as much data available about a singular patient in trying to assess something as simple as a Emergency Department Disposition.
 
 ## TODO
 
-- Test the generalibility by using different LLMs
 - test on hospital to hospital systems (MIMIC-UCLA)
 - rewrite the paper
 - take into account all the reviews
