@@ -1,4 +1,4 @@
-# Multimodal Clinical pseudo-notes for EHR prediction
+# Medical Pseudo-notes GeneratEHR: Multimodal Clinical pseudo-notes for EHR prediction
 
 Electronic Health Records (EHR) are comprehensive databases containing multimodal information about a patient's health history. In recent years, Transformer-based models have shown promise in various downstream tasks, including mortality prediction and diagnosis. However, these approaches have either considered one component of EHR, or considered its multiple components as a single data modality. In this work, we treat EHR as multimodal, separately representing concepts like diagnoses, medications, procedures, and lab values. Our novel "pseudo-notes" method transforms these modalities into structured language texts, allowing us to leverage general Large Language Models (LLMs) for individual EHR representation from the MIMIC-IV database. Additionally, we introduce an additional self-attention layer for late fusion of these embeddings to gain a joint representation of a patient, followed by a projection into a reduced space for inference. We fine-tune our model with this newly added layer for predicting Emergency Department (ED) Disposition and find our multimodal model outperforms against a single modality method, and other machine learning methods, demonstrating its effectiveness.
 
@@ -34,8 +34,8 @@ To assess the performance of our method, we compared it to a single-modality mod
 | vitals-only Transformer | 0.566 (0.544, 0.579) | 0.395 (0.383, 0.407) | 0.395 (0.383, 0.407) |
 | Multimodal Transformer | 0.894 (0.885, 0.903) | 0.811 (0.797, 0.824) | 0.907 (0.900, 0.914) |
 | MedBERT Transformer | 0.923 (0.915, 0.931) | 0.902 (0.891, 0.913) | 0.938 (0.932, 0.944) |
-| MLP | n/a | n/a | n/a |
-| Random Forest Classifier | n/a | n/a | n/a |
+| MLP | 0.758 (0.741, 0.774) | 0.865 (0.846, 0.883) | 0.783 (0.769, 0.797) |
+| Random Forest Classifier | 0.805 (0.791, 0.819) | 0.796 (0.776, 0.814) | 0.801 (0.788, 0.814) |
 
 
 It is very clear that the multimodality method outperforms single modality methods. Therefore there is a lot of merit in using as much data available about a singular patient in trying to assess something as simple as a Emergency Department Disposition.
@@ -48,6 +48,7 @@ It is very clear that the multimodality method outperforms single modality metho
 - Demonstrate on more general tasks extending it capabilities to other domains in an appendix
 - Test the orthogonality of datasets
 - Add the number representation portion of the value since our model learns a lot of number stuff
+- power analysis and unbalanced dataset correction for Multiclass classification
 
 ## Authors
 - **Simon Lee** (simonlee711@g.ucla.edu)
