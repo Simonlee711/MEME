@@ -44,11 +44,14 @@ It is very clear that the multimodality method outperforms single modality metho
 
 - test on hospital to hospital systems (MIMIC-UCLA)
 - rewrite the paper
-- take into account all the reviews
-- Demonstrate on more general tasks extending it capabilities to other domains in an appendix
-- Test the orthogonality of datasets
 - Add the number representation portion of the value since our model learns a lot of number stuff
-- power analysis and unbalanced dataset correction for Multiclass classification
+- down sampled test on all ICD codes
+  - This showcases the potential for actual clinical benefit
+- feature importance
+  - check if features vary from different modalities
+- rewrite the problem formulation
+  - why is ED Disposition Important
+  - why is predicting ICD codes important
 
 ## Authors
 - **Simon Lee** (simonlee711@g.ucla.edu)
