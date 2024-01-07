@@ -107,45 +107,68 @@ def load_data_UCLA(file_name):
     ]  # rearrange column to the end
     return df
 
+
 def load_data_MIMIC(file_name):
     """ assumption: data is in correct format """
     with open(file_name) as f:
         json_content = json.load(f)
     df = pd.DataFrame(json_content).T
-    
-#     df = df.iloc[:10000] # test
+
+    #     df = df.iloc[:10000] # test
     # NOTE: THIS SHOULD CHANGE
     # df['eddischarge'] = [0 if 'a d m i t' in s.lower() else 1 for s in df['eddischarge_category']] # admitted = 1, Home = 0
-    df['eddischarge'] = [0 if 'h o m e' in s.lower() else 1 for s in df['eddischarge_category']] # admitted = 1, Home = 0
+    df["eddischarge"] = [
+        0 if "h o m e" in s.lower() else 1 for s in df["eddischarge_category"]
+    ]  # admitted = 1, Home = 0
     # df['eddischarge'] = [1 if 'admitted' in s.lower() else 0 for s in df['eddischarge']] # admitted = 1, Home = 0
     # df['medrecon'] = df['medrecon'].fillna("The patient was previously not taking any medications.")
     # since they're all missing...
     # df['medrecon'] = df['medrecon'].fillna("Previous medications were not recorded.")
-    df['medrecon'] = "Previous medications were not recorded."
+    df["medrecon"] = "Previous medications were not recorded."
 
-    df['triage'] = df['triage'].fillna("Triage measurements were not taken.")
-    df['pyxis'] = df['pyxis'].fillna("The patient did not receive any medications.")
-    df['vitals'] = df['vitals'].fillna("The patient had no vitals recorded")
-    df['codes'] = df['codes'].fillna("The patient had no diagnostic codes recorded.")
-    df = df.drop("admission",axis=1)
-    df = df.drop("discharge",axis=1)
+    df["triage"] = df["triage"].fillna("Triage measurements were not taken.")
+    df["pyxis"] = df["pyxis"].fillna("The patient did not receive any medications.")
+    df["vitals"] = df["vitals"].fillna("The patient had no vitals recorded")
+    df["codes"] = df["codes"].fillna("The patient had no diagnostic codes recorded.")
+    df = df.drop("admission", axis=1)
+    df = df.drop("discharge", axis=1)
     # df = df.drop("eddischarge_category",axis=1)
-    df['ID'] = df.arrival.astype(str).str.split().str[1].replace(",", " ", regex=True).to_list()
-    df = df[[col for col in df.columns if col != 'eddischarge'] + ['eddischarge']] # rearrange column to the end
-    return df 
+    df["ID"] = (
+        df.arrival.astype(str)
+        .str.split()
+        .str[1]
+        .replace(",", " ", regex=True)
+        .to_list()
+    )
+    df = df[
+        [col for col in df.columns if col != "eddischarge"] + ["eddischarge"]
+    ]  # rearrange column to the end
+    return df
+
 
 def append_multi_bench_UCLA(df, file_name):
     # generate dictionaries from the icustays dataset to map to our dataset
-    metainfo = pd.read_csv(file_name, sep='$')
-    metainfo['hadm_id'] = metainfo['hadm_id'].astype(str)
-    
-    metainfo['further_discharge'] = (1 - (metainfo['DischargeDisposition'] == 'Home or Self Care').astype(int)).fillna(1) # assume home unless otherwise specified
-    metainfo['mortality'] = metainfo['hospital_expire_flag'].fillna(0)
-    metainfo['ICU'] = metainfo['ICU'].fillna(0)
-    metainfo['labels'] = metainfo.apply(lambda row: [row['further_discharge'], row['mortality'], row['ICU']], axis=1)
+    metainfo = pd.read_csv(file_name, sep="$")
+    metainfo["hadm_id"] = metainfo["hadm_id"].astype(str)
 
-    return df\
-        .merge(metainfo.set_index('hadm_id')[['labels']], left_index=True, right_index=True, how='left')\
+    metainfo["further_discharge"] = (
+        1 - (metainfo["DischargeDisposition"] == "Home or Self Care").astype(int)
+    ).fillna(
+        1
+    )  # assume home unless otherwise specified
+    metainfo["mortality"] = metainfo["hospital_expire_flag"].fillna(0)
+    metainfo["ICU"] = metainfo["ICU"].fillna(0)
+    metainfo["labels"] = metainfo.apply(
+        lambda row: [row["further_discharge"], row["mortality"], row["ICU"]], axis=1
+    )
+
+    return df.merge(
+        metainfo.set_index("hadm_id")[["labels"]],
+        left_index=True,
+        right_index=True,
+        how="left",
+    )
+
 
 def append_multi_bench_MIMIC(df):
     # generate dictionaries from the icustays dataset to map to our dataset
@@ -273,11 +296,7 @@ class Tokenizer:
 def single_mode_dataloader(tokens, tokenizer, batch, num_workers):
     data_collator = DataCollatorWithPadding(tokenizer=tokenizer)
 
-    dataset_cc = DatasetDict(
-        {
-            "test": tokens,
-        }
-    )
+    dataset_cc = DatasetDict({"test": tokens,})
 
     dataloader = DataLoader(
         dataset_cc["test"],
@@ -341,6 +360,7 @@ def multimodal_dataloader(
     print("dataloader created")
     return multimodal_dataloader
 
+
 def train_eddispo(
     model_name,
     task_name,
@@ -354,14 +374,12 @@ def train_eddispo(
     metric=None,
     mode="multimodal",
 ):
-#     if metric == None:
-    metric = load_metric('f1')
+    #     if metric == None:
+    metric = load_metric("f1")
     optimizer = AdamW(model.parameters(), lr=5e-5)
 
     num_epoch = epoch
-    num_training_steps = (
-        num_epoch * len(train_dataloader) // BATCH
-    )
+    num_training_steps = num_epoch * len(train_dataloader) // BATCH
     #     print(len(triage_dataset_cc['train']["input_ids"]))
 
     lr_scheduler = get_scheduler(
@@ -404,7 +422,6 @@ def train_eddispo(
             num_batch += 1
             del outputs
 
-
         # run on validation set
         logger.info("Validation")
         model.eval()
@@ -439,7 +456,10 @@ def train_eddispo(
 
         logger.info(f"Average Validation Loss: {avg_val_loss}")
         logger.info(metric.compute())
-        torch.save(model.state_dict(), f"./UCLA-models/{model_name}-{task_name}-{epoch}-final.pth")
+        torch.save(
+            model.state_dict(),
+            f"./UCLA-models/{model_name}-{task_name}-{epoch}-final.pth",
+        )
         with open(f"./UCLA-models/{model_name}-loss.pkl", "wb") as file:
             pickle.dump(validation_losses, file)
     logger.info(f"{model_name} complete...")
@@ -460,13 +480,11 @@ def train_multitask(
     metric=None,
     mode="multimodal",
 ):
-    metric = load_metric('f1')
+    metric = load_metric("f1")
     optimizer = AdamW(model.parameters(), lr=5e-5)
 
     num_epoch = epoch
-    num_training_steps = (
-        num_epoch * len(train_dataloader) // BATCH
-    )
+    num_training_steps = num_epoch * len(train_dataloader) // BATCH
 
     lr_scheduler = get_scheduler(
         "linear",
@@ -527,7 +545,9 @@ def train_multitask(
             logits = outputs.logits  # calculates the probabilities between the labels
             sigmoid_output = torch.sigmoid(logits)
             predictions = (sigmoid_output > 0.5).to(torch.int)
-            metric.add_batch(predictions = predictions.view(-1), references = batch['labels'].view(-1) )
+            metric.add_batch(
+                predictions=predictions.view(-1), references=batch["labels"].view(-1)
+            )
         avg_val_loss = total_val_loss / num_batches
         validation_losses.append(
             avg_val_loss
@@ -536,7 +556,10 @@ def train_multitask(
         logger.info(f"Average Validation Loss: {avg_val_loss}")
         logger.info(metric.compute())
 
-        torch.save(model.state_dict(), f"./UCLA-models/{model_name}-{task_name}-{epoch}-final.pth")
+        torch.save(
+            model.state_dict(),
+            f"./UCLA-models/{model_name}-{task_name}-{epoch}-final.pth",
+        )
         with open(f"./UCLA-models/{model_name}-loss.pkl", "wb") as file:
             pickle.dump(validation_losses, file)
     logger.info(f"{model_name} complete...")
@@ -611,7 +634,7 @@ if __name__ == "__main__":
             from model_multitask import *
         # %%
         if DATASET == "UCLA":
-            logger.info('loading data...')
+            logger.info("loading data...")
             df = load_data_UCLA(DATA)
             label_col = "eddischarge"
 
@@ -619,12 +642,15 @@ if __name__ == "__main__":
 
             if TASK == "multitask":
                 logger.info("Appending multitask data...")
-                df = append_multi_bench_UCLA(df, "/opt/data/commonfilesharePHI/jnchiang/projects/er-pseudonotes/er-pull.rpt")
+                df = append_multi_bench_UCLA(
+                    df,
+                    "/opt/data/commonfilesharePHI/jnchiang/projects/er-pseudonotes/er-pull.rpt",
+                )
                 df = df[df["eddischarge"] != 0]
-                df = df.drop("eddischarge",axis=1)
+                df = df.drop("eddischarge", axis=1)
                 label_col = "labels"
         if DATASET == "MIMIC":
-            logger.info('loading data...')
+            logger.info("loading data...")
             df = load_data_MIMIC(DATA)
             label_col = "eddischarge"
 
@@ -634,7 +660,7 @@ if __name__ == "__main__":
                 logger.info("Appending multitask data...")
                 df = append_multi_bench_MIMIC(df)
                 df = df[df["eddischarge"] != 0]
-                df = df.drop("eddischarge",axis=1)
+                df = df.drop("eddischarge", axis=1)
                 label_col = "labels"
 
         # %%
@@ -671,14 +697,14 @@ if __name__ == "__main__":
             codes_val_tokens,
             pyxis_val_tokens,
         ) = processor.convert(l_val)
-        (
-#             arrival_test_tokens,
-#             triage_test_tokens,
-#             medrecon_test_tokens,
-#             vitals_test_tokens,
-#             codes_test_tokens,
-#             pyxis_test_tokens,
-#         ) = processor.convert(l_test)
+        #        (
+        #             arrival_test_tokens,
+        #             triage_test_tokens,
+        #             medrecon_test_tokens,
+        #             vitals_test_tokens,
+        #             codes_test_tokens,
+        #             pyxis_test_tokens,
+        #         ) = processor.convert(l_test)
         data_collator = DataCollatorWithPadding(tokenizer=processor.tokenizer)
 
         # %%
@@ -709,11 +735,10 @@ if __name__ == "__main__":
                 num_workers=NUM_WORKERS,
             )
             # %%
-            
 
             logger.info("training...")
-            
-            if TASK == "eddispo":   
+
+            if TASK == "eddispo":
                 model = ED_classifier(
                     checkpoint="./medbert",
                     num_labels=2,
@@ -810,7 +835,7 @@ if __name__ == "__main__":
                         metric=None,
                         mode=MODE,
                     )
-            
+
                 if TASK == "multitask":
                     logger.info("creating model...")
 
