@@ -64,7 +64,7 @@ def create_logger(log_dir, experiment_name):
     logger = logging.getLogger()
     return logger 
 
-def load_data2(file_name):
+def load_data_UCLA(file_name):
     """assumption: data is in correct format"""
     with open(file_name) as f:
         json_content = json.load(f)
@@ -94,7 +94,7 @@ def load_data2(file_name):
     ]  # rearrange column to the end
     return df
 
-def load_data(file_name):
+def load_data_MIMIC(file_name):
     """ assumption: data is in correct format """
     with open(file_name) as f:
         json_content = json.load(f)
@@ -119,10 +119,9 @@ def load_data(file_name):
     # df = df.drop("eddischarge_category",axis=1)
     df['ID'] = df.arrival.astype(str).str.split().str[1].replace(",", " ", regex=True).to_list()
     df = df[[col for col in df.columns if col != 'eddischarge'] + ['eddischarge']] # rearrange column to the end
-    df = df.head(100)
     return df 
 
-def append_multi_bench(df, file_name):
+def append_multi_bench_UCLA(df, file_name):
     # generate dictionaries from the icustays dataset to map to our dataset
     metainfo = pd.read_csv(file_name, sep='$')
     metainfo['hadm_id'] = metainfo['hadm_id'].astype(str)
@@ -134,6 +133,66 @@ def append_multi_bench(df, file_name):
 
     return df\
         .merge(metainfo.set_index('hadm_id')[['labels']], left_index=True, right_index=True, how='left')\
+
+def append_multi_bench_MIMIC(df):
+    # generate dictionaries from the icustays dataset to map to our dataset
+    df["stay_id"] = df.index
+    df["stay_id"] = df["stay_id"].astype("int64")
+    df["ID"] = df["ID"].astype("int64")
+
+    # add hadm_id to dataset
+    edstays = pd.read_csv(
+        "/opt/data/commonfilesharePHI/jnchiang/projects/er-pseudonotes/mimic/mimic-iv-ed-2.2/mimic-iv-ed-2.2/ed/edstays.csv.gz"
+    )
+    edstays = edstays.fillna(0)
+    edstays["hadm_id"] = edstays["hadm_id"].astype(int)
+    edstays = edstays[["stay_id", "hadm_id"]]
+    metainfo = pd.merge(df, edstays, on=["stay_id"])
+
+    # generate dictionaries from the admissions dataset to map to our dataset
+    admissions = pd.read_csv("./mimic-iv/admissions.csv.gz")
+    discharge_dict = admissions.set_index("hadm_id")["discharge_location"].to_dict()
+    death_dict = admissions.set_index("hadm_id")["hospital_expire_flag"].to_dict()
+
+    # generate dictionaries from the icustays dataset to map to our dataset
+    icustays = pd.read_csv("./mimic-iv/icustays.csv.gz")
+    icustays["ICU"] = 1
+    ICU_dict = icustays.set_index("hadm_id")["ICU"].to_dict()
+
+    # map and fill in zeros
+    metainfo["discharge_location"] = metainfo["hadm_id"].map(discharge_dict)
+    metainfo["hospital_expire_flag"] = metainfo["hadm_id"].map(death_dict)
+    l = metainfo.discharge_location.value_counts()
+    metainfo["ICU"] = metainfo["hadm_id"].map(ICU_dict)
+    metainfo["discharge_location"] = metainfo["discharge_location"].fillna("HOME")
+    metainfo["discharge_location"] = (
+        metainfo["discharge_location"].isin(["HOME"]).astype(int)
+    )
+    metainfo["discharge_location"] = (
+        ~metainfo["discharge_location"].astype(bool)
+    ).astype(
+        int
+    )  # Home - 0 Other - 1
+    metainfo = metainfo.rename(columns={"hospital_expire_flag": "mortality"})
+    metainfo = metainfo.rename(columns={"discharge_location": "further_discharge"})
+
+    metainfo = metainfo.fillna(0.0)
+    metainfo["further_discharge"] = metainfo["further_discharge"].astype(int)
+    metainfo["mortality"] = metainfo["mortality"].astype(int)
+    metainfo["ICU"] = metainfo["ICU"].astype(int)
+    metainfo["labels"] = metainfo.apply(
+        lambda row: [row["further_discharge"], row["mortality"], row["ICU"]], axis=1
+    )
+    metainfo = metainfo.drop("further_discharge", axis=1)
+    metainfo = metainfo.drop("mortality", axis=1)
+    metainfo = metainfo.drop("ICU", axis=1)
+    metainfo = metainfo.drop("ID", axis=1)
+    metainfo = metainfo.drop("hadm_id", axis=1)
+    metainfo.index = metainfo.stay_id
+    metainfo = metainfo.drop("stay_id", axis=1)
+    metainfo.index.name = None
+    metainfo = metainfo[metainfo["eddischarge"] != 0]
+    return metainfo
     
 
 def cut(df, set_type, label_col="eddischarge"):
@@ -253,6 +312,24 @@ def load_pkl_model(file, device):
         model_task_specific.to(device)
     return model_task_specific
 
+def load_torch_model(file, device, mode, task):
+    print(f"Loading model from {file}")
+    # Create an instance of the ED_classifier
+    if mode == "multimodal":
+        if task =="multitask":
+            model_task_specific = ED_classifier(checkpoint="./medbert", num_labels=3, input_dim=768, modalities=6, freeze=True)
+        if task == "eddispo":
+            model_task_specific = ED_classifier(checkpoint="./medbert", num_labels=2, input_dim=768, modalities=6, freeze=True)
+    if mode == "single":
+        if task == "multitask":            
+            model_task_specific = SingleModPredictor(checkpoint="./medbert", num_labels=3, freeze=True)
+        if task == "eddispo":            
+            model_task_specific = SingleModPredictor(checkpoint="./medbert", num_labels=2, freeze=True)
+    # Load the state dictionary into the model
+    model_task_specific.load_state_dict(torch.load(file, map_location=device))
+    model_task_specific.to(device)
+    return model_task_specific
+
 def inference_multitask(model_name, model, test_dataloader, device, metric=None, mode='multimodal', plot=False):
 
     if metric is None: 
@@ -354,6 +431,8 @@ if __name__ == '__main__':
     WEIGHTS = config.get('weights')
     GPU = config.get('gpu')
     TASK = config.get("task", "eddispo")
+    FOLDER = config.get("folder" "./")
+    DATASET = config.get("dataset", "UCLA")
     assert WEIGHTS is not None, "Weights directory missing"
     
     logger = create_logger(LOG_DIR, EXPERIMENT_NAME)
@@ -370,21 +449,41 @@ if __name__ == '__main__':
     logger.info(f'OPERATING MODE: {MODE}')
     logger.info(f'EXPERIMENT NAME: {EXPERIMENT_NAME}')
     logger.info(f'TASK: {TASK}')
-
+    logger.info(f'FOLDER: {FOLDER}')
+    logger.info(f'DATASET: {DATASET}')
     # %%
     try:
-        # %%
-        logger.info('loading data...')
-        df = load_data2(DATA)
-        label_col = "eddischarge"
-        
-        # %%
-
+        if TASK == "eddispo":
+            from model import *
         if TASK == "multitask":
-            logger.info("Appending multitask data...")
-            df = append_multi_bench(df, "/opt/data/commonfilesharePHI/jnchiang/projects/er-pseudonotes/er-pull.rpt")
-            df = df.drop("eddischarge",axis=1)
-            label_col = "labels"
+            from model_multitask import *
+        # %%
+        if DATASET == "UCLA":
+            logger.info('loading data...')
+            df = load_data_UCLA(DATA)
+            label_col = "eddischarge"
+
+            # %%
+
+            if TASK == "multitask":
+                logger.info("Appending multitask data...")
+                df = append_multi_bench_UCLA(df, "/opt/data/commonfilesharePHI/jnchiang/projects/er-pseudonotes/er-pull.rpt")
+                df = df[df["eddischarge"] != 0]
+                df = df.drop("eddischarge",axis=1)
+                label_col = "labels"
+        if DATASET == "MIMIC":
+            logger.info('loading data...')
+            df = load_data_MIMIC(DATA)
+            label_col = "eddischarge"
+
+            # %%
+
+            if TASK == "multitask":
+                logger.info("Appending multitask data...")
+                df = append_multi_bench_MIMIC(df)
+                df = df[df["eddischarge"] != 0]
+                df = df.drop("eddischarge",axis=1)
+                label_col = "labels"
             
         # %%
 
@@ -420,7 +519,7 @@ if __name__ == '__main__':
             )
             # %%
             logger.info('loading model and weights...')
-            model = load_pkl_model(WEIGHTS, DEVICE)
+            model = load_torch_model(WEIGHTS, DEVICE, MODE, TASK)
 
             logger.info('inference...')
             if TASK == 'eddispo':
@@ -467,8 +566,8 @@ if __name__ == '__main__':
         
                 if TASK == 'eddispo':
                     logger.info('loading model and weights...')
-                    m_weights = os.path.join(WEIGHTS, f'{mode}-disposition.pkl')
-                    model = load_pkl_model(m_weights, DEVICE)
+                    m_weights = os.path.join(WEIGHTS, f'{mode}-disposition.pth')
+                    model = load_torch_model(m_weights, DEVICE, MODE, TASK)
 
                     logger.info('inference...')
                     result_df = inference_eddispo(
@@ -482,8 +581,8 @@ if __name__ == '__main__':
                     )
                 if TASK == 'multitask':
                     logger.info('loading model and weights...')
-                    m_weights = os.path.join(WEIGHTS, f'{mode}-multitask.pkl')
-                    model = load_pkl_model(m_weights, DEVICE)
+                    m_weights = os.path.join(WEIGHTS, f'{mode}-multitask.pth')
+                    model = load_torch_model(m_weights, DEVICE, MODE, TASK)
 
                     logger.info('inference...')
                     result_df = inference_multitask(

@@ -1,6 +1,6 @@
 # %% Python
 """
-python trainer.py \
+python main.py \
     --model=./medbert \
     --weights=/opt/data/commonfilesharePHI/slee/GeneratEHR/pickle-models/generatEHR-disposition.pkl \
     --gpu=0
@@ -38,7 +38,6 @@ from datasets import Dataset, load_metric, DatasetDict
 from transformers import DataCollatorWithPadding, AutoTokenizer
 
 from torch.utils.data import DataLoader
-from model import *
 
 
 # %%
@@ -78,7 +77,7 @@ def create_logger(log_dir, experiment_name):
     return logger
 
 
-def load_data(file_name):
+def load_data_UCLA(file_name):
     """assumption: data is in correct format"""
     with open(file_name) as f:
         json_content = json.load(f)
@@ -108,8 +107,47 @@ def load_data(file_name):
     ]  # rearrange column to the end
     return df
 
+def load_data_MIMIC(file_name):
+    """ assumption: data is in correct format """
+    with open(file_name) as f:
+        json_content = json.load(f)
+    df = pd.DataFrame(json_content).T
+    
+#     df = df.iloc[:10000] # test
+    # NOTE: THIS SHOULD CHANGE
+    # df['eddischarge'] = [0 if 'a d m i t' in s.lower() else 1 for s in df['eddischarge_category']] # admitted = 1, Home = 0
+    df['eddischarge'] = [0 if 'h o m e' in s.lower() else 1 for s in df['eddischarge_category']] # admitted = 1, Home = 0
+    # df['eddischarge'] = [1 if 'admitted' in s.lower() else 0 for s in df['eddischarge']] # admitted = 1, Home = 0
+    # df['medrecon'] = df['medrecon'].fillna("The patient was previously not taking any medications.")
+    # since they're all missing...
+    # df['medrecon'] = df['medrecon'].fillna("Previous medications were not recorded.")
+    df['medrecon'] = "Previous medications were not recorded."
 
-def append_multi_bench(df, file_name):
+    df['triage'] = df['triage'].fillna("Triage measurements were not taken.")
+    df['pyxis'] = df['pyxis'].fillna("The patient did not receive any medications.")
+    df['vitals'] = df['vitals'].fillna("The patient had no vitals recorded")
+    df['codes'] = df['codes'].fillna("The patient had no diagnostic codes recorded.")
+    df = df.drop("admission",axis=1)
+    df = df.drop("discharge",axis=1)
+    # df = df.drop("eddischarge_category",axis=1)
+    df['ID'] = df.arrival.astype(str).str.split().str[1].replace(",", " ", regex=True).to_list()
+    df = df[[col for col in df.columns if col != 'eddischarge'] + ['eddischarge']] # rearrange column to the end
+    return df 
+
+def append_multi_bench_UCLA(df, file_name):
+    # generate dictionaries from the icustays dataset to map to our dataset
+    metainfo = pd.read_csv(file_name, sep='$')
+    metainfo['hadm_id'] = metainfo['hadm_id'].astype(str)
+    
+    metainfo['further_discharge'] = (1 - (metainfo['DischargeDisposition'] == 'Home or Self Care').astype(int)).fillna(1) # assume home unless otherwise specified
+    metainfo['mortality'] = metainfo['hospital_expire_flag'].fillna(0)
+    metainfo['ICU'] = metainfo['ICU'].fillna(0)
+    metainfo['labels'] = metainfo.apply(lambda row: [row['further_discharge'], row['mortality'], row['ICU']], axis=1)
+
+    return df\
+        .merge(metainfo.set_index('hadm_id')[['labels']], left_index=True, right_index=True, how='left')\
+
+def append_multi_bench_MIMIC(df):
     # generate dictionaries from the icustays dataset to map to our dataset
     df["stay_id"] = df.index
     df["stay_id"] = df["stay_id"].astype("int64")
@@ -303,15 +341,6 @@ def multimodal_dataloader(
     print("dataloader created")
     return multimodal_dataloader
 
-
-def load_pkl_model(file, device):
-    # file = "../models/models-bin/arrival.pkl"
-    print(f"Loading... {file}")
-    with open(file, "rb") as f:
-        model_task_specific = pickle.load(f)
-        model_task_specific.to(device)
-    return model_task_specific
-
 def train_eddispo(
     model_name,
     task_name,
@@ -325,9 +354,9 @@ def train_eddispo(
     metric=None,
     mode="multimodal",
 ):
-    if metric == None:
-        metric = load_metric('f1')
-    optimizer = AdamW(model.parameters(), lr=5e-2)
+#     if metric == None:
+    metric = load_metric('f1')
+    optimizer = AdamW(model.parameters(), lr=5e-5)
 
     num_epoch = epoch
     num_training_steps = (
@@ -374,13 +403,6 @@ def train_eddispo(
             total_train_loss += loss.item()
             num_batch += 1
             del outputs
-            
-            if num_batch % 100 == 0:
-                avg_train_loss = total_train_loss / num_batch
-                train_losses.append(
-                    avg_train_loss
-                )
-        logger.info(f"Average Train Loss: {np.mean(train_losses)}")
 
 
         # run on validation set
@@ -417,12 +439,110 @@ def train_eddispo(
 
         logger.info(f"Average Validation Loss: {avg_val_loss}")
         logger.info(metric.compute())
-
-        name = f"./{model_name}-{task_name}-{epoch}.pkl"
-        with open(name, "wb") as file:
-            pickle.dump(model, file)
-        torch.save(model.state_dict(), f"./{model_name}-{task_name}-{epoch}-final.pth")
+        torch.save(model.state_dict(), f"./UCLA-models/{model_name}-{task_name}-{epoch}-final.pth")
+        with open(f"./UCLA-models/{model_name}-loss.pkl", "wb") as file:
+            pickle.dump(validation_losses, file)
     logger.info(f"{model_name} complete...")
+    del model
+    torch.cuda.empty_cache()
+
+
+def train_multitask(
+    model_name,
+    task_name,
+    model,
+    train_dataloader,
+    validate_dataloader,
+    tokenizer,
+    BATCH=64,
+    device=None,
+    epoch=1,
+    metric=None,
+    mode="multimodal",
+):
+    metric = load_metric('f1')
+    optimizer = AdamW(model.parameters(), lr=5e-5)
+
+    num_epoch = epoch
+    num_training_steps = (
+        num_epoch * len(train_dataloader) // BATCH
+    )
+
+    lr_scheduler = get_scheduler(
+        "linear",
+        optimizer=optimizer,
+        num_warmup_steps=0,
+        num_training_steps=num_training_steps,
+    )
+    metric = metric
+    validation_losses = []
+    for epoch in range(num_epoch):
+        model.train()
+        logger.info(f"Epoch {epoch}...")
+        for batch in progress_bar(train_dataloader):
+            if mode == "multimodal":
+                input_ids = [
+                    b.to(device) for b in torch.unbind(batch["input_ids"], dim=1)
+                ]
+                attention_masks = [
+                    b.to(device) for b in torch.unbind(batch["attention_mask"], dim=1)
+                ]
+            else:
+                input_ids = batch["input_ids"].to(device)
+                attention_masks = batch["attention_mask"].to(device)
+            labels = batch["labels"].to(device)
+            outputs = model(input_ids, attention_masks, labels)
+
+            # updates weights accordingly
+            loss = outputs.loss
+            loss.backward()  # computes gradients
+            optimizer.step()  # updates the weights and biases based on these gradients
+            lr_scheduler.step()  # updates the weights and biases based on these gradients
+            optimizer.zero_grad()  # used to clear the gradients of all parameters in a model
+            del outputs
+
+        # run on validation set
+        logger.info("Validation")
+        model.eval()
+        total_val_loss = 0
+        num_batches = 0
+        for batch in progress_bar((validate_dataloader)):
+            if mode == "multimodal":
+                input_ids = [
+                    b.to(device) for b in torch.unbind(batch["input_ids"], dim=1)
+                ]
+                attention_masks = [
+                    b.to(device) for b in torch.unbind(batch["attention_mask"], dim=1)
+                ]
+            else:
+                input_ids = batch["input_ids"].to(device)
+                attention_masks = batch["attention_mask"].to(device)
+            labels = batch["labels"].to(device)
+
+            with torch.no_grad():  # a context manager that disables gradient calculation during model inference
+                outputs = model(input_ids, attention_masks, labels)
+                loss = outputs.loss
+                total_val_loss += loss.item()
+                num_batches += 1
+            logits = outputs.logits  # calculates the probabilities between the labels
+            sigmoid_output = torch.sigmoid(logits)
+            predictions = (sigmoid_output > 0.5).to(torch.int)
+            metric.add_batch(predictions = predictions.view(-1), references = batch['labels'].view(-1) )
+        avg_val_loss = total_val_loss / num_batches
+        validation_losses.append(
+            avg_val_loss
+        )  # Appending the average validation loss of the epoch
+
+        logger.info(f"Average Validation Loss: {avg_val_loss}")
+        logger.info(metric.compute())
+
+        torch.save(model.state_dict(), f"./UCLA-models/{model_name}-{task_name}-{epoch}-final.pth")
+        with open(f"./UCLA-models/{model_name}-loss.pkl", "wb") as file:
+            pickle.dump(validation_losses, file)
+    logger.info(f"{model_name} complete...")
+    del model
+    torch.cuda.empty_cache()
+
 
 def train_validate_test_split(df, train_percent=0.7, validate_percent=0.15, seed=None):
     np.random.seed(seed)
@@ -461,6 +581,7 @@ if __name__ == "__main__":
     GPU = config.get("gpu")
     TASK = config.get("task", "eddispo")
     EPOCH = config.get("epoch", 1)
+    DATASET = config.get("dataset", "UCLA")
     assert WEIGHTS is not None, "Weights directory missing"
 
     logger = create_logger(LOG_DIR, EXPERIMENT_NAME)
@@ -484,20 +605,37 @@ if __name__ == "__main__":
     # %%
     try:
         # %%
-        logger.info("loading data...")
-        df = load_data(DATA)
-        label_col = "eddischarge"
-
-        # %%
-
+        if TASK == "eddispo":
+            from model import *
         if TASK == "multitask":
-            logger.info("Appending multitask data...")
-            df = append_multi_bench(
-                df,
-                "/opt/data/commonfilesharePHI/jnchiang/projects/er-pseudonotes/er-pull.rpt",
-            )
-            df = df.drop("eddischarge", axis=1)
-            label_col = "labels"
+            from model_multitask import *
+        # %%
+        if DATASET == "UCLA":
+            logger.info('loading data...')
+            df = load_data_UCLA(DATA)
+            label_col = "eddischarge"
+
+            # %%
+
+            if TASK == "multitask":
+                logger.info("Appending multitask data...")
+                df = append_multi_bench_UCLA(df, "/opt/data/commonfilesharePHI/jnchiang/projects/er-pseudonotes/er-pull.rpt")
+                df = df[df["eddischarge"] != 0]
+                df = df.drop("eddischarge",axis=1)
+                label_col = "labels"
+        if DATASET == "MIMIC":
+            logger.info('loading data...')
+            df = load_data_MIMIC(DATA)
+            label_col = "eddischarge"
+
+            # %%
+
+            if TASK == "multitask":
+                logger.info("Appending multitask data...")
+                df = append_multi_bench_MIMIC(df)
+                df = df[df["eddischarge"] != 0]
+                df = df.drop("eddischarge",axis=1)
+                label_col = "labels"
 
         # %%
         logger.info("train, val, test split")
@@ -534,13 +672,13 @@ if __name__ == "__main__":
             pyxis_val_tokens,
         ) = processor.convert(l_val)
         (
-            arrival_test_tokens,
-            triage_test_tokens,
-            medrecon_test_tokens,
-            vitals_test_tokens,
-            codes_test_tokens,
-            pyxis_test_tokens,
-        ) = processor.convert(l_test)
+#             arrival_test_tokens,
+#             triage_test_tokens,
+#             medrecon_test_tokens,
+#             vitals_test_tokens,
+#             codes_test_tokens,
+#             pyxis_test_tokens,
+#         ) = processor.convert(l_test)
         data_collator = DataCollatorWithPadding(tokenizer=processor.tokenizer)
 
         # %%
@@ -571,17 +709,18 @@ if __name__ == "__main__":
                 num_workers=NUM_WORKERS,
             )
             # %%
+            
 
             logger.info("training...")
-            if TASK == "eddispo":
-                model = load_pkl_model(WEIGHTS, DEVICE)
-#                 model = ED_classifier(
-#                     checkpoint="./medbert",
-#                     num_labels=2,
-#                     input_dim=768,
-#                     modalities=6,
-#                     freeze=True,
-#                 ).to(DEVICE)
+            
+            if TASK == "eddispo":   
+                model = ED_classifier(
+                    checkpoint="./medbert",
+                    num_labels=2,
+                    input_dim=768,
+                    modalities=6,
+                    freeze=True,
+                ).to(DEVICE)
                 train_eddispo(
                     model_name=EXPERIMENT_NAME,
                     task_name=TASK,
@@ -589,16 +728,33 @@ if __name__ == "__main__":
                     train_dataloader=train_multimodal_dataloader,
                     validate_dataloader=val_multimodal_dataloader,
                     tokenizer=tokenizer,
-                    BATCH=64,
+                    device=DEVICE,
+                    epoch=EPOCH,
+                    metric=None,
+                    mode=MODE,
+                )
+            if TASK == "multitask":
+                model = ED_classifier(
+                    checkpoint="./medbert",
+                    num_labels=3,
+                    input_dim=768,
+                    modalities=6,
+                    freeze=True,
+                ).to(DEVICE)
+                train_multitask(
+                    model_name=EXPERIMENT_NAME,
+                    task_name=TASK,
+                    model=model,
+                    train_dataloader=train_multimodal_dataloader,
+                    validate_dataloader=val_multimodal_dataloader,
+                    tokenizer=tokenizer,
                     device=DEVICE,
                     epoch=EPOCH,
                     metric=None,
                     mode=MODE,
                 )
             # %%
-            logger.info("done...")
-            del model
-            torch.cuda.empty_cache()
+
         # %%
         if MODE == "single":
             tokens_mapped = {
@@ -635,7 +791,6 @@ if __name__ == "__main__":
                     batch=BATCH,
                     num_workers=NUM_WORKERS,
                 )
-
                 if TASK == "eddispo":
                     logger.info("creating model...")
 
@@ -643,7 +798,6 @@ if __name__ == "__main__":
                     model = SingleModPredictor(
                         checkpoint="./medbert", num_labels=2, freeze=True
                     ).to(DEVICE)
-                    logger.info("training...")
                     train_eddispo(
                         model_name=EXPERIMENT_NAME,
                         task_name=TASK,
@@ -651,13 +805,32 @@ if __name__ == "__main__":
                         train_dataloader=train_single_dataloader,
                         validate_dataloader=val_single_dataloader,
                         tokenizer=tokenizer,
-                        BATCH=64,
                         device=DEVICE,
                         epoch=EPOCH,
                         metric=None,
                         mode=MODE,
                     )
-                    # plot=args.plot
+            
+                if TASK == "multitask":
+                    logger.info("creating model...")
+
+                    logger.info("training...")
+                    model = SingleModPredictor(
+                        checkpoint="./medbert", num_labels=3, freeze=True
+                    ).to(DEVICE)
+                    metric = load_metric("f1")
+                    train_multitask(
+                        model_name=EXPERIMENT_NAME,
+                        task_name=TASK,
+                        model=model,
+                        train_dataloader=train_single_dataloader,
+                        validate_dataloader=val_single_dataloader,
+                        tokenizer=tokenizer,
+                        device=DEVICE,
+                        epoch=EPOCH,
+                        metric=metric,
+                        mode=MODE,
+                    )
     # %%
     except Exception as e:
         logger.error(traceback.format_exc())
