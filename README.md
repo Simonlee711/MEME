@@ -8,23 +8,13 @@ In this work, we introduce Multiple Embedding Model for EHR (MEME), an approach 
 
 # Motivation
 
-![Model Image](https://github.com/Simonlee711/MEME/blob/main/img/model.png "Model Architecture")
-
 Electronic Health Records are heterogenous containing a mixture of numerical, categorical, free text data. However traditional machine learning models struggle to learn representations of categorical data due to traditional one hot encoding schemes that result in sparse matrices. Therefore in this work we present **pseudo-notes**, which is a data transformation from EHR tabular data to text that allows us to leverage recent Large Language Models that have better understanding of English and context. These in turn generate better representations of EHR data as demonstrated by this research which benchmarks text vs tabular input as well as multimodal vs singular modality input. 
 
 **TLDR** Multiple Embedding Model for EHR (MEME) outperforms all benchmark models on various tasks recorded in the Emergency Department. A further description is referenced in the paper.
 
-### Modality Specific Pseudo-notes
+### Pseudo-notes
 
-| Modality  | Sentence |
-|-----------|----------|
-| arrival   | Patient 10000032, a 52 year old white female... |
-| triage    | At triage: temperature was 98.4, pulse was 70.4... |
-| medrecon  | The patient was previously taking the following medication: ibuprofen, nsaid analgesics (cox non-specific) - propionic acid derivatives... |
-| vitals    | The patient had the following vitals: pulse was 128... |
-| codes     | The patient received the following diagnostic codes: [0389], septicemia nos... |
-| pyxis     | The patient received the following medications: At 2125-03-19 13:05:00, lorazepam, lorazepam were administered... |
----
+![Model Image](https://github.com/Simonlee711/MEME/blob/main/img/model.png "Model Architecture")
 
 # Data
 The [MIMIC-IV-ED dataset](https://physionet.org/content/mimic-iv-ed/2.2/), part of the extensive MIMIC-IV collection, concentrates on emergency department records from a major hospital. It anonymizes and details patient demographics, triage, vitals, tests, medications, and outcomes, aiding research in emergency care and hospital operations. Access follows strict privacy regulations.
