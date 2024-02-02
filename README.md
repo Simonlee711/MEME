@@ -6,6 +6,9 @@
 In this work, we introduce Multiple Embedding Model for EHR (MEME), an approach that views Electronic Health Records (EHR) as multimodal data. It uniquely represents tabular concepts like diagnoses and medications as structured natural language text using our "pseudo-notes" method. This approach allows us to effectively employ Large Language Models (LLMs) for individual EHR representation, proving beneficial in a variety of text-classification tasks. We demonstrate the effectiveness of MEME by applying it to diverse tasks within the Emergency Department across multiple hospital systems. Our findings show that MEME surpasses the performance of both single modality/embedding methods and traditional machine learning approaches, highlighting its effectiveness. Additionally, our tests on the model's generalizability reveal that training solely on the MIMIC-IV database does not guarantee effective application across different hospital institutions.
 
 # Motivation
+
+![Model Image](https://github.com/Simonlee711/MEME/blob/main/img/model.png "Model Architecture")
+
 Electronic Health Records are heterogenous containing a mixture of numerical, categorical, free text data. However traditional machine learning models struggle to learn representations of categorical data due to traditional one hot encoding schemes that result in sparse matrices. Therefore in this work we present **pseudo-notes**, which is a data transformation from EHR tabular data to text that allows us to leverage recent Large Language Models that have better understanding of English and context. These in turn generate better representations of EHR data as demonstrated by this research which benchmarks text vs tabular input as well as multimodal vs singular modality input. 
 
 **TLDR** Multiple Embedding Model for EHR (MEME) outperforms all benchmark models on various tasks recorded in the Emergency Department. A further description is referenced in the paper.
