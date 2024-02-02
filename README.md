@@ -1,4 +1,4 @@
-![GitHub](https://img.shields.io/github/license/Simonlee711/MEME) [![arXiv](https://img.shields.io/badge/arXiv-2402.00160-brightgreen.svg)](https://arxiv.org/abs/2402.00160) [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/multimodal-clinical-pseudo-notes-for)](https://paperswithcode.com/paper/multimodal-clinical-pseudo-notes-for)
+![GitHub](https://img.shields.io/github/license/Simonlee711/MEME) [![arXiv](https://img.shields.io/badge/arXiv-2402.00160-brightgreen.svg)](https://arxiv.org/abs/2402.00160) [![PWC](https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/multimodal-clinical-pseudo-notes-for-brightgreen.svg)](https://paperswithcode.com/paper/multimodal-clinical-pseudo-notes-for)
 # Multimodal Clinical Pseudo-notes for Emergency Department Prediction Tasks using Multiple Embedding Model for EHR (MEME)
 
 # Abstract
