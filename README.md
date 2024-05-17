@@ -2,7 +2,7 @@
 
 # Emergency Department Decision Support using Clinical Pseudo-notes
 
-### Old:Multimodal Clinical Pseudo-notes for Emergency Department Prediction Tasks using Multiple Embedding Model for EHR (MEME)
+### Old Title: Multimodal Clinical Pseudo-notes for Emergency Department Prediction Tasks using Multiple Embedding Model for EHR (MEME)
 
 # Abstract
 
