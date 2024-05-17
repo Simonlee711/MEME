@@ -1,6 +1,8 @@
 ![GitHub](https://img.shields.io/github/license/Simonlee711/MEME) [![arXiv](https://img.shields.io/badge/arXiv-2402.00160-red.svg)](https://arxiv.org/abs/2402.00160) [![PapersWithCode](https://img.shields.io/badge/PapersWithCode-Multimodal%20Clinical%20Pseudo%20Notes-lightblue.svg)](https://paperswithcode.com/paper/multimodal-clinical-pseudo-notes-for) [![Hugging Face Model](https://img.shields.io/badge/Hugging%20Face-MEME-yellow.svg)](https://huggingface.co/Simonlee711/MEME)
 
-# Multimodal Clinical Pseudo-notes for Emergency Department Prediction Tasks using Multiple Embedding Model for EHR (MEME)
+# Emergency Department Decision Support using Clinical Pseudo-notes
+
+### Old:Multimodal Clinical Pseudo-notes for Emergency Department Prediction Tasks using Multiple Embedding Model for EHR (MEME)
 
 # Abstract
 
@@ -100,9 +102,9 @@ Model weights for MIMIC trained models can be found on the huggingface Website: 
 
 # Citing
 ```
-@misc{lee2024multimodal,
-      title={Multimodal Clinical Pseudo-notes for Emergency Department Prediction Tasks using Multiple Embedding Model for EHR (MEME)}, 
-      author={Simon A. Lee and Sujay Jain and Alex Chen and Arabdha Biswas and Jennifer Fang and Akos Rudas and Jeffrey N. Chiang},
+@misc{lee2024emergency,
+      title={Emergency Department Decision Support using Clinical Pseudo-notes}, 
+      author={Simon A. Lee and Sujay Jain and Alex Chen and Kyoka Ono and Jennifer Fang and Akos Rudas and Jeffrey N. Chiang},
       year={2024},
       eprint={2402.00160},
       archivePrefix={arXiv},
