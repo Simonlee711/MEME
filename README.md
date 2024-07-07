@@ -102,12 +102,10 @@ Model weights for MIMIC trained models can be found on the huggingface Website: 
 
 # Citing
 ```
-@misc{lee2024emergency,
-      title={Emergency Department Decision Support using Clinical Pseudo-notes}, 
-      author={Simon A. Lee and Sujay Jain and Alex Chen and Kyoka Ono and Jennifer Fang and Akos Rudas and Jeffrey N. Chiang},
-      year={2024},
-      eprint={2402.00160},
-      archivePrefix={arXiv},
-      primaryClass={cs.CL}
+@misc{lee2024multimodal,
+  title={Multimodal clinical pseudo-notes for emergency department prediction tasks using multiple embedding model for ehr (meme)},
+  author={Lee, Simon A and Jain, Sujay and Chen, Alex and Biswas, Arabdha and Fang, Jennifer and Rudas, Akos and Chiang, Jeffrey N},
+  journal={arXiv preprint arXiv:2402.00160},
+  year={2024}
 }
 ```
