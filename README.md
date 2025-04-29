@@ -1,4 +1,4 @@
-![GitHub](https://img.shields.io/github/license/Simonlee711/MEME) [![arXiv](https://img.shields.io/badge/arXiv-2402.00160-red.svg)](https://arxiv.org/abs/2402.00160) [![PapersWithCode](https://img.shields.io/badge/PapersWithCode-Multimodal%20Clinical%20Pseudo%20Notes-lightblue.svg)](https://paperswithcode.com/paper/multimodal-clinical-pseudo-notes-for) [![Hugging Face Model](https://img.shields.io/badge/Hugging%20Face-MEME-yellow.svg)](https://huggingface.co/Simonlee711/MEME)
+![GitHub](https://img.shields.io/github/license/Simonlee711/MEME) [![arXiv](https://img.shields.io/badge/arXiv-2402.00160-red.svg)](https://arxiv.org/abs/2402.00160) [![PapersWithCode](https://img.shields.io/badge/PapersWithCode-Multimodal%20Clinical%20Pseudo%20Notes-lightblue.svg)](https://paperswithcode.com/paper/multimodal-clinical-pseudo-notes-for) [![Hugging Face Model](https://img.shields.io/badge/Hugging%20Face-MEME-yellow.svg)](https://huggingface.co/Simonlee711/MEME) [![Hugging Face Model](https://img.shields.io/badge/DeepWiki-blue.svg)](https://deepwiki.com/Simonlee711/MEME/4.1-training-pipeline)
 
 # Emergency Department Decision Support using Clinical Pseudo-notes
 
