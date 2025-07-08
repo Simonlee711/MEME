@@ -1,12 +1,10 @@
-![GitHub](https://img.shields.io/github/license/Simonlee711/MEME) [![arXiv](https://img.shields.io/badge/arXiv-2402.00160-red.svg)](https://arxiv.org/abs/2402.00160) [![PapersWithCode](https://img.shields.io/badge/PapersWithCode-Multimodal%20Clinical%20Pseudo%20Notes-lightblue.svg)](https://paperswithcode.com/paper/multimodal-clinical-pseudo-notes-for) [![Hugging Face Model](https://img.shields.io/badge/Hugging%20Face-MEME-yellow.svg)](https://huggingface.co/Simonlee711/MEME) [![Hugging Face Model](https://img.shields.io/badge/DeepWiki-blue.svg)](https://deepwiki.com/Simonlee711/MEME/1-meme-system-overview)
+![GitHub](https://img.shields.io/github/license/Simonlee711/MEME) [![arXiv](https://img.shields.io/badge/npj-red.svg)](https://www.nature.com/articles/s41746-025-01777-x) [![PapersWithCode](https://img.shields.io/badge/PapersWithCode-Multimodal%20Clinical%20Pseudo%20Notes-lightblue.svg)](https://paperswithcode.com/paper/multimodal-clinical-pseudo-notes-for) [![Hugging Face Model](https://img.shields.io/badge/Hugging%20Face-MEME-yellow.svg)](https://huggingface.co/Simonlee711/MEME) [![Hugging Face Model](https://img.shields.io/badge/DeepWiki-blue.svg)](https://deepwiki.com/Simonlee711/MEME/1-meme-system-overview)
 
-# Emergency Department Decision Support using Clinical Pseudo-notes
-
-### Old Title: Multimodal Clinical Pseudo-notes for Emergency Department Prediction Tasks using Multiple Embedding Model for EHR (MEME)
+# Clinical decision support using pseudo-notes from multiple streams of EHR data
 
 # Abstract
 
-In this work, we introduce Multiple Embedding Model for EHR (MEME), an approach that views Electronic Health Records (EHR) as multimodal data. It uniquely represents tabular concepts like diagnoses and medications as structured natural language text using our "pseudo-notes" method. This approach allows us to effectively employ Large Language Models (LLMs) for individual EHR representation, proving beneficial in a variety of text-classification tasks. We demonstrate the effectiveness of MEME by applying it to diverse tasks within the Emergency Department across multiple hospital systems. Our findings show that MEME surpasses the performance of both single modality/embedding methods and traditional machine learning approaches, highlighting its effectiveness. Additionally, our tests on the model's generalizability reveal that training solely on the MIMIC-IV database does not guarantee effective application across different hospital institutions.
+Electronic health records (EHR) contain data from disparate sources, spanning various biological and temporal scales. In this work, we introduce the Multiple Embedding Model for EHR (MEME), a deep learning framework for clinical decision support that operates over heterogeneous EHR. MEME first converts tabular EHR into “pseudo-notes”, reducing the need for concept harmonization across EHR systems and allowing the use of any state-of-the-art, open source language foundation models. The model separately embeds EHR domains, then uses a self-attention mechanism to learn the contextual importance of these multiple embeddings. In a study of 400,019 emergency department visits, MEME successfully predicted emergency department disposition, discharge location, intensive care requirement, and mortality. It outperformed traditional machine learning models (Logistic Regression, Random Forest, XGBoost, MLP), EHR foundation models (EHR-shot, MC-BEC, MSEM), and GPT-4 prompting strategies. Due to text serialization, MEME also exhibited strong few-shot learning performance in an external, unstandardized EHR database.
 
 # Motivation
 
@@ -102,10 +100,14 @@ Model weights for MIMIC trained models can be found on the huggingface Website: 
 
 # Citing
 ```
-@misc{lee2024multimodal,
-  title={Multimodal clinical pseudo-notes for emergency department prediction tasks using multiple embedding model for ehr (meme)},
-  author={Lee, Simon A and Jain, Sujay and Chen, Alex and Biswas, Arabdha and Fang, Jennifer and Rudas, Akos and Chiang, Jeffrey N},
-  journal={arXiv preprint arXiv:2402.00160},
-  year={2024}
+@article{lee2025clinical,
+  title={Clinical decision support using pseudo-notes from multiple streams of EHR data},
+  author={Lee, Simon A and Jain, Sujay and Chen, Alex and Ono, Kyoka and Biswas, Arabdha and Rudas, {\'A}kos and Fang, Jennifer and Chiang, Jeffrey N},
+  journal={npj Digital Medicine},
+  volume={8},
+  number={1},
+  pages={394},
+  year={2025},
+  publisher={Nature Publishing Group UK London}
 }
 ```
